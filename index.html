@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8 content-type=application/x-javascript" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Shenzhen's street view</title>
+<style type="text/css">
+html, body, #map-canvas {
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+}
+</style>
+<script>
+
+var init = function() {
+
+	var labelnum = 4;
+	var start = new qq.maps.LatLng(22.544399319, 114.085409224);
+	
+	//step1: create panorama
+	var pano = new qq.maps.Panorama(document.getElementById('pano'));
+	pano.setOptions({
+		position: start,
+		pov: {
+            heading: 294.9,
+            pitch: 2.1
+        },
+		disableFullScreen: false,
+		zoom: 1
+	});
+	
+	//step2: new labels
+	var panoLabels = Array(labelnum);
+	for(var i = 0,l = labelnum;i < l; i++){
+		panoLabels[i] = new qq.maps.PanoramaLabel({
+			panorama:pano,
+			altitude:15,
+		});		
+		
+		qq.maps.event.addListener(panoLabels[i],"click",function(evt)
+		{
+			//we can add action here
+			alert('The label LatLng:' + panoLabels[i].getPosition());
+		});	
+	}
+	
+	//step3: search nearby labels
+	var label_search = new qq.maps.SearchService({
+		pageCapacity: labelnum,
+	
+		complete: function(results) {
+			var totalNum = results.detail.totalNum;
+			var pois = results.detail.pois;
+			
+			var labelsTable = document.getElementById('labels_table');
+			while (labelsTable.hasChildNodes()) {
+				labelsTable.removeChild(labelsTable.lastChild);
+			}
+			
+			for(var i = 0,l = pois.length;i < l; i++){
+                var poi = pois[i];	
+	
+				//renew labels_table
+				var row = document.createElement('tr');
+				labelsTable.appendChild(row);
+				var labelCell = document.createElement('td');
+				labelCell.innerHTML = '<b>Label: ' + i + '</b>';
+				var valueCell = document.createElement('td');
+				valueCell.innerHTML = poi.name;
+				labelsTable.appendChild(labelCell);
+				labelsTable.appendChild(valueCell);
+				
+				//renew panoLables				
+				panoLabels[i].setContent(poi.name);
+				panoLabels[i].setPosition(poi.latLng);
+            }
+		}
+	});
+	
+	//step4: change street view
+	var pano_service = new qq.maps.PanoramaService();
+	pano_service.getPano(pano.getPosition(),1000,function(result){
+		if(result != null){
+			//step4-1：create street view
+			pano.setPano(result.svid);
+			
+			//step4-2: renew view
+			var x1 = result.latlng.lng;
+			var y1 = result.latlng.lat;
+			var x2 = start.lng;
+			var y2 = start.lat;
+
+			var alpha = Math.acos((y2 - y1) / Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)));
+			if (x2 - x1 < 0) {
+				alpha = Math.PI * 2 - alpha;
+			}
+			pano.setPov({heading : alpha/Math.PI*180, pitch : 0});
+		}
+    });
+	
+	//add listeners	
+	qq.maps.event.addListener(pano, 'pano_changed', function() {
+		var panoCell = document.getElementById('panoCell');
+		panoCell.innerHTML = pano.getPano();
+	});
+	
+	qq.maps.event.addListener(pano, 'position_changed', function() {
+		var positionCell = document.getElementById('positionCell');
+		positionCell.firstChild.nodeValue = pano.getPosition() + '';	
+		label_search.searchNearBy("*",pano.getPosition(),50);
+	});
+	
+	qq.maps.event.addListener(pano, 'pov_changed', function (){
+		var headingCell = document.getElementById('headingCell');
+		var pitchCell = document.getElementById('pitchCell');
+		headingCell.firstChild.nodeValue = pano.getPov().heading + '';
+		pitchCell.firstChild.nodeValue = pano.getPov().pitch + '';
+	});
+		
+	qq.maps.event.addListener(pano, 'zoom_changed', function() {
+      var panoCell = document.getElementById('zoomCell');
+      panoCell.innerHTML = pano.getZoom();
+	});
+}
+
+window.onload=init;
+
+</script>
+</head>
+<body>
+<div id="pano" style="width: 60%; height: 100%;float:left"></div>
+
+<div id="panoInfo" style="width: 40%; height: 100%;float:left">
+    <table>
+      <tr>
+<td><b>Position</b></td><td id="positionCell">&nbsp;</td>
+      </tr>
+      <tr>
+<td><b>Heading</b></td><td id="headingCell">hdg</td>
+      </tr>
+      <tr>
+<td><b>Pitch</b></td><td id="pitchCell">pit</td>
+      </tr>
+      <tr>
+<td><b>Pano ID</b></td><td id="panoCell">&nbsp;</td>
+      </tr>
+      <tr>
+<td><b>Zoom</b></td><td id="zoomCell">1</td>
+      </tr>
+     <table id="labels_table"></table>
+</table>
+</div>
+<script src="http://map.qq.com/api/js?v=2.exp&key=FWKBZ-RU2C4-E5QUL-XZBNF-MDLZZ-YRFTJ"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Shenzhen's street view(Simple)</title>
+<style type="text/css">
+html, body, #map-canvas {
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+}
+</style>
+<script>
+
+
+var init = function() {
+
+	var start = new qq.maps.LatLng(39.882326, 116.326088);
+
+	var pano = new qq.maps.Panorama(document.getElementById('pano'));
+	pano.setOptions({
+		disableMove: false,
+		disableCompass: false,
+		zoom: 1
+	});
+	
+	var pano_service = new qq.maps.PanoramaService();
+	pano_service.getPano(start, 200, function(result){
+        pano.setPano(result.svid);
+
+        var x1 = result.latlng.lng;
+        var y1 = result.latlng.lat;
+        var x2 = 116.326088;
+        var y2 = 39.882326;
+
+        var alpha = Math.acos((y2 - y1) / Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)));
+		if (x2 - x1 < 0) {
+			alpha = Math.PI * 2 - alpha;
+		}
+
+		pano.setPov({heading : alpha/Math.PI*180, pitch : 0});
+    });
+	
+	qq.maps.event.addListener(pano, 'pano_changed', function() {
+      var panoCell = document.getElementById('panoCell');
+      panoCell.innerHTML = pano.getPano();
+	});
+	
+	qq.maps.event.addListener(pano, 'position_changed', function() {
+      var positionCell = document.getElementById('positionCell');
+      positionCell.firstChild.nodeValue = pano.getPosition() + '';
+	});
+	
+	qq.maps.event.addListener(pano, 'pov_changed', function (){
+		var headingCell = document.getElementById('headingCell');
+		var pitchCell = document.getElementById('pitchCell');
+		headingCell.firstChild.nodeValue = pano.getPov().heading + '';
+		pitchCell.firstChild.nodeValue = pano.getPov().pitch + '';
+	});
+		
+	qq.maps.event.addListener(pano, 'zoom_changed', function() {
+      var panoCell = document.getElementById('zoomCell');
+      panoCell.innerHTML = pano.getZoom();
+	});
+}
+</script>
+</head>
+<body onLoad="init()">
+<div id="pano" style="width: 60%; height: 100%;float:left"></div>
+
+<div id="panoInfo" style="width: 40%; height: 100%;float:left">
+    <table>
+      <tr>
+<td><b>Position</b></td><td id="positionCell">&nbsp;</td>
+      </tr>
+      <tr>
+<td><b>Heading</b></td><td id="headingCell">hdg</td>
+      </tr>
+      <tr>
+<td><b>Pitch</b></td><td id="pitchCell">pit</td>
+      </tr>
+      <tr>
+<td><b>Pano ID</b></td><td id="panoCell">&nbsp;</td>
+      </tr>
+      <tr>
+<td><b>Zoom</b></td><td id="zoomCell">&nbsp;</td>
+      </tr>
+     <table id="links_table"></table>
+</table>
+</div>
+<script src="http://map.qq.com/api/js?v=2.exp&key=FWKBZ-RU2C4-E5QUL-XZBNF-MDLZZ-YRFTJ"></script>
+</body>
+</html>
